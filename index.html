@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="th">
 <head>
-<meta name="mp-build" content="20260802-1903">
+<meta name="mp-build" content="20260802-1917">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#05070a">
@@ -1175,7 +1175,7 @@ const CONFESS = {
 
 
 
-const BUILD = "20260802-1903-mp";          /* build.py แทนที่บรรทัดนี้ */
+const BUILD = "20260802-1917-mp";          /* build.py แทนที่บรรทัดนี้ */
 
 /* ============================ state ============================ */
 const SAVE = "chantara.v1";
@@ -2069,9 +2069,14 @@ mqtt/dist/mqtt.esm.js:
       const mk = (fn, tag, cfg) => {
         try {
           const r = fn(Object.assign({ appId: APP }, cfg), room);
-          const [send, get] = r.makeAction("m");
+          /* Trystero v0.25: makeAction คืน {send, onMessage} และ onMessage ต้อง "กำหนดค่า"
+             เวอร์ชันเก่าคืน [send, get] — รองรับทั้งสองแบบ */
+          const a = r.makeAction("m");
+          const send = Array.isArray(a) ? a[0] : a.send;
           rooms.push({ send, tag });
-          get(d => recv(d));
+          if (Array.isArray(a)) a[1](d => recv(d));
+          else if (typeof a.onMessage === "function") a.onMessage(d => recv(d));
+          else a.onMessage = d => recv(d);
           if (typeof r.onPeerJoin !== "function") { r.onPeerJoin = () => { MP.chans[tag] = (MP.chans[tag] || 0) + 1; paintLobby(); }; }
           else { r.onPeerJoin(() => { MP.chans[tag] = (MP.chans[tag] || 0) + 1; paintLobby(); }); }
           if (typeof r.onPeerLeave !== "function") { r.onPeerLeave = () => { MP.chans[tag] = Math.max(0, (MP.chans[tag] || 1) - 1); paintLobby(); }; }
@@ -2159,7 +2164,7 @@ mqtt/dist/mqtt.esm.js:
   function paintLobby() {
     const box = $("mpPeers"); if (!box) return;
     const list = alive();
-    const on = (MP.chans.nostr || 0) + (MP.chans.mqtt || 0);
+    const on = Math.max(0, MP.chans.nostr || 0) + Math.max(0, MP.chans.mqtt || 0);
     const st = $("mpStatus");
     if (st) {
       st.textContent = !MP.on ? ""
