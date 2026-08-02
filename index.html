@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="th">
 <head>
-<meta name="mp-build" content="20260802-1917">
+<meta name="mp-build" content="20260802-1933">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#05070a">
@@ -1175,7 +1175,7 @@ const CONFESS = {
 
 
 
-const BUILD = "20260802-1917-mp";          /* build.py แทนที่บรรทัดนี้ */
+const BUILD = "20260802-1933-mp";          /* build.py แทนที่บรรทัดนี้ */
 
 /* ============================ state ============================ */
 const SAVE = "chantara.v1";
@@ -1844,7 +1844,12 @@ document.addEventListener("keydown", e=>{
 
 /* ---------- หน้าโหลด ---------- */
 function preloadAll(){
-  const keys = Object.keys(IMG).filter(k => IMG[k]);
+  /* โหลดล่วงหน้าเฉพาะที่ต้องใช้ทันที — ที่เหลือ prefetch ตอนเดินเข้าห้อง
+     (ภาพเต็มชุด ~70MB มือถือรอไม่ไหว) */
+  const first = SCENES[S.scene] || SCENES.front;
+  const keys = ["ui_title", first.img, "p_thanwa", "p_earth"]
+    .concat((first.hotspots||[]).flatMap(h => (h.do||[]).map(st => st.goto && SCENES[st.goto] && SCENES[st.goto].img)))
+    .filter((k, i, a) => k && IMG[k] && a.indexOf(k) === i);
   return new Promise(res=>{
     if(!keys.length) return res();
     let n = 0;
@@ -1852,7 +1857,7 @@ function preloadAll(){
       $("loadfill").style.width = p+"%"; $("loadpc").textContent = p+"%";
       if(n >= keys.length) res(); };
     keys.forEach(k=>{ const i = new Image(); i.onload = tick; i.onerror = tick; i.src = IMG[k]; });
-    setTimeout(res, 14000);                     /* กันค้างถ้าเน็ตช้า */
+    setTimeout(res, 9000);                      /* กันค้างถ้าเน็ตช้า */
   });
 }
 async function showLoading(){
